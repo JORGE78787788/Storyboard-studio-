@@ -752,6 +752,216 @@ textarea::placeholder { color: var(--d); }
 
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--b2); }
+
+/* ── CINEMATIC LOADING OVERLAY ── */
+.cinema-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #030303;
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.cinema-overlay.active { display: flex; }
+
+.cinema-scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,.012) 2px,
+    rgba(255,255,255,.012) 4px
+  );
+  pointer-events: none;
+  animation: scanMove 8s linear infinite;
+}
+@keyframes scanMove { from{background-position:0 0} to{background-position:0 100px} }
+
+.cinema-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 560px;
+  max-width: 90vw;
+}
+
+.cinema-top-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 32px;
+}
+.cinema-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--r);
+  animation: pulse 1.2s infinite;
+  flex-shrink: 0;
+}
+.cinema-label {
+  font-size: 8px;
+  letter-spacing: .28em;
+  color: var(--r);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.cinema-label-right {
+  margin-left: auto;
+  font-size: 7px;
+  letter-spacing: .15em;
+  color: var(--d2);
+}
+
+/* video "screen" mock */
+.cinema-screens {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+  width: 100%;
+}
+.cinema-screen {
+  flex: 1;
+  aspect-ratio: 16/9;
+  background: #0a0a0a;
+  border: 1px solid #1a1a1a;
+  position: relative;
+  overflow: hidden;
+}
+.cinema-screen.watching {
+  border-color: var(--r);
+  box-shadow: 0 0 16px rgba(255,45,45,.15);
+}
+.cinema-screen.done {
+  border-color: var(--g);
+  box-shadow: 0 0 10px rgba(0,255,136,.1);
+}
+.cinema-screen-scan {
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--r), transparent);
+  animation: scanLine 1.8s ease-in-out infinite;
+  display: none;
+}
+.cinema-screen.watching .cinema-screen-scan { display: block; }
+@keyframes scanLine {
+  0% { top: 0; opacity: 1; }
+  100% { top: 100%; opacity: .3; }
+}
+.cinema-screen-bars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  padding: 8px;
+}
+.cinema-bar {
+  flex: 1;
+  background: rgba(255,45,45,.12);
+  border-radius: 1px;
+  transition: height .4s ease;
+  min-height: 4px;
+}
+.cinema-screen.watching .cinema-bar { background: rgba(255,45,45,.25); }
+.cinema-screen.done .cinema-bar { background: rgba(0,255,136,.18); }
+
+.cinema-screen-label {
+  position: absolute;
+  top: 6px; left: 8px;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: var(--d2);
+}
+.cinema-screen.watching .cinema-screen-label { color: var(--r); }
+.cinema-screen.done .cinema-screen-label { color: var(--g); }
+
+.cinema-screen-tick {
+  position: absolute;
+  bottom: 6px; right: 8px;
+  font-size: 10px;
+  color: var(--g);
+  display: none;
+}
+.cinema-screen.done .cinema-screen-tick { display: block; }
+
+/* main step text */
+.cinema-step {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--w);
+  letter-spacing: -.01em;
+  text-align: center;
+  min-height: 28px;
+  margin-bottom: 10px;
+  font-family: 'Space Mono', monospace;
+  transition: opacity .4s;
+}
+.cinema-substep {
+  font-size: 9px;
+  color: var(--d2);
+  letter-spacing: .1em;
+  text-align: center;
+  min-height: 18px;
+  margin-bottom: 28px;
+}
+
+/* progress bar */
+.cinema-progress-track {
+  width: 100%;
+  height: 2px;
+  background: #111;
+  position: relative;
+  margin-bottom: 10px;
+}
+.cinema-progress-fill {
+  height: 100%;
+  background: var(--r);
+  width: 0%;
+  transition: width .8s ease;
+  position: relative;
+}
+.cinema-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0; top: -2px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--r);
+  box-shadow: 0 0 8px var(--r);
+}
+.cinema-progress-pct {
+  font-size: 8px;
+  color: var(--d2);
+  letter-spacing: .1em;
+  text-align: right;
+  margin-bottom: 24px;
+}
+
+/* bottom data row */
+.cinema-data-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #111;
+  padding-top: 16px;
+}
+.cinema-data-item { text-align: center; }
+.cinema-data-k { font-size: 7px; color: var(--d); letter-spacing: .15em; margin-bottom: 4px; }
+.cinema-data-v { font-size: 10px; color: var(--w); font-weight: 700; }
+.cinema-data-v.g { color: var(--g); }
+.cinema-data-v.r { color: var(--r); }
+.cinema-data-v.y { color: var(--y); }
 </style>
 </head>
 <body>
@@ -953,6 +1163,43 @@ Narração: 'Hoje você vai conhecer...'
   </div>
 </div>
 
+<!-- CINEMATIC LOADING OVERLAY -->
+<div class="cinema-overlay" id="cinema-overlay">
+  <div class="cinema-scanlines"></div>
+  <div class="cinema-content">
+    <div class="cinema-top-bar">
+      <div class="cinema-dot"></div>
+      <div class="cinema-label">CLAUDE OPUS 4.6 — ANALISANDO CANAL</div>
+      <div class="cinema-label-right" id="cinema-timer">00:00</div>
+    </div>
+    <div class="cinema-screens" id="cinema-screens"></div>
+    <div class="cinema-step" id="cinema-step">Preparando análise...</div>
+    <div class="cinema-substep" id="cinema-substep"></div>
+    <div class="cinema-progress-track">
+      <div class="cinema-progress-fill" id="cinema-progress"></div>
+    </div>
+    <div class="cinema-progress-pct" id="cinema-pct">0%</div>
+    <div class="cinema-data-row">
+      <div class="cinema-data-item">
+        <div class="cinema-data-k">VÍDEOS</div>
+        <div class="cinema-data-v r" id="cinema-vids">—</div>
+      </div>
+      <div class="cinema-data-item">
+        <div class="cinema-data-k">FRAMES</div>
+        <div class="cinema-data-v y" id="cinema-frames">—</div>
+      </div>
+      <div class="cinema-data-item">
+        <div class="cinema-data-k">MODELO</div>
+        <div class="cinema-data-v">OPUS 4.6</div>
+      </div>
+      <div class="cinema-data-item">
+        <div class="cinema-data-k">STATUS</div>
+        <div class="cinema-data-v g" id="cinema-status-label">INICIANDO</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- NOTIF -->
 <div class="notif" id="notif"></div>
 
@@ -1040,20 +1287,22 @@ function updateCharCount() {
 }
 
 // ── MODAL ──
-function openNewFormat() {
+function openNewFormat(showResults = false) {
   document.getElementById('modal-overlay').classList.add('open');
-  document.getElementById('analysis-result').classList.remove('visible');
-  document.getElementById('modal-status').classList.remove('visible');
-  document.getElementById('save-btn').style.display = 'none';
-  document.getElementById('analyze-btn').style.display = '';
-  document.getElementById('analyze-btn').disabled = false;
-  document.getElementById('analyze-btn').textContent = '◉ ANALISAR CANAL';
-  document.getElementById('format-name-input').value = '';
-  videoSlots = [[]];
-  currentVideoCount = 1;
-  setVideoCount(1);
-  switchTab('upload');
-  analyzedFormatData = null;
+  if (!showResults) {
+    document.getElementById('analysis-result').classList.remove('visible');
+    document.getElementById('modal-status').classList.remove('visible');
+    document.getElementById('save-btn').style.display = 'none';
+    document.getElementById('analyze-btn').style.display = '';
+    document.getElementById('analyze-btn').disabled = false;
+    document.getElementById('analyze-btn').textContent = '◉ ANALISAR CANAL';
+    document.getElementById('format-name-input').value = '';
+    videoSlots = [[]];
+    currentVideoCount = 1;
+    setVideoCount(1);
+    switchTab('upload');
+    analyzedFormatData = null;
+  }
 }
 
 function closeModal() {
@@ -1131,19 +1380,20 @@ function renderVideoSlots() {
             oninput="window['slotTitle_'+${si}]=this.value">
         </div>
         <div style="background:rgba(255,210,63,.05);border:1px solid rgba(255,210,63,.12);padding:8px 12px;font-size:8px;color:#aaa;line-height:1.8;margin-bottom:8px;">
-          📂 <span style="color:var(--y);font-weight:700;">PARTES SEQUENCIAIS:</span> Se o vídeo foi dividido em partes, adicione todas aqui na ordem.
+          📸 <span style="color:var(--y);font-weight:700;">SCREENSHOTS / FRAMES:</span> Tire prints de cenas do vídeo (PNG, JPG) e envie aqui.<br>
+          Quanto mais frames variados, <span style="color:var(--w)">melhor a análise do estilo visual</span>. Para vídeo completo, use a aba <span style="color:var(--r);font-weight:700">URL / YouTube</span>.
         </div>
         <div class="slot-drop-zone" id="dz-${si}"
           ondragover="event.preventDefault();this.classList.add('drag-over')"
           ondragleave="this.classList.remove('drag-over')"
           ondrop="handleSlotDrop(event,${si})"
           onclick="document.getElementById('slot-input-${si}').click()">
-          <input type="file" id="slot-input-${si}" accept="video/*,image/*" multiple style="display:none"
+          <input type="file" id="slot-input-${si}" accept="image/*" multiple style="display:none"
             onchange="handleSlotSelect(event,${si})">
           <div style="font-size:20px;opacity:.25;margin-bottom:6px;">▶</div>
           <div style="font-size:9px;color:var(--d2);line-height:1.8;">
             Arraste ou <span style="color:var(--r);font-weight:700;">clique para selecionar</span><br>
-            <span style="font-size:7px;color:var(--d)">MP4, MOV, WebM · múltiplas partes permitidas</span>
+            <span style="font-size:7px;color:var(--d)">PNG, JPG, WebP · screenshots/frames do vídeo</span>
           </div>
         </div>
         <div class="slot-file-list" id="slot-files-${si}">
@@ -1176,7 +1426,7 @@ function toggleSlot(si) {
 function handleSlotDrop(e, si) {
   e.preventDefault();
   document.getElementById('dz-'+si).classList.remove('drag-over');
-  const files = [...e.dataTransfer.files];
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
   addSlotFiles(si, files);
 }
 
@@ -1234,6 +1484,85 @@ function fileToBase64(file) {
   });
 }
 
+// ── CINEMATIC LOADING SYSTEM ──
+let cinemaTimerInterval = null;
+let cinemaBarInterval = null;
+let cinemaStartTime = null;
+
+function startCinema(videoCount, frameCount, isUpload) {
+  const overlay = document.getElementById('cinema-overlay');
+  overlay.classList.add('active');
+
+  // set data row
+  document.getElementById('cinema-vids').textContent = videoCount;
+  document.getElementById('cinema-frames').textContent = isUpload ? frameCount + ' imgs' : 'via URL';
+
+  // build screens
+  const screensEl = document.getElementById('cinema-screens');
+  screensEl.innerHTML = Array.from({length: videoCount}, (_, i) => `
+    <div class="cinema-screen" id="cscreen-${i}">
+      <div class="cinema-screen-label">VID ${String(i+1).padStart(2,'0')}</div>
+      <div class="cinema-screen-scan"></div>
+      <div class="cinema-screen-bars">
+        ${Array.from({length:10}, (_,j) => `<div class="cinema-bar" id="cbar-${i}-${j}" style="height:${10+Math.random()*30}%"></div>`).join('')}
+      </div>
+      <div class="cinema-screen-tick">✓</div>
+    </div>
+  `).join('');
+
+  // start timer
+  cinemaStartTime = Date.now();
+  cinemaTimerInterval = setInterval(() => {
+    const s = Math.floor((Date.now() - cinemaStartTime) / 1000);
+    const m = Math.floor(s / 60);
+    document.getElementById('cinema-timer').textContent =
+      String(m).padStart(2,'0') + ':' + String(s % 60).padStart(2,'0');
+  }, 1000);
+
+  // animate bars
+  cinemaBarInterval = setInterval(() => {
+    for (let i = 0; i < videoCount; i++) {
+      const screen = document.getElementById('cscreen-' + i);
+      if (!screen || screen.classList.contains('done')) continue;
+      for (let j = 0; j < 10; j++) {
+        const bar = document.getElementById(`cbar-${i}-${j}`);
+        if (bar) bar.style.height = (8 + Math.random() * 60) + '%';
+      }
+    }
+  }, 200);
+}
+
+function setCinemaStep(text, sub, pct, statusLabel) {
+  const stepEl = document.getElementById('cinema-step');
+  stepEl.style.opacity = '0';
+  setTimeout(() => {
+    stepEl.textContent = text;
+    stepEl.style.opacity = '1';
+  }, 200);
+  if (sub !== undefined) document.getElementById('cinema-substep').textContent = sub;
+  if (pct !== undefined) {
+    document.getElementById('cinema-progress').style.width = pct + '%';
+    document.getElementById('cinema-pct').textContent = pct + '%';
+  }
+  if (statusLabel) document.getElementById('cinema-status-label').textContent = statusLabel;
+}
+
+function setCinemaVideoWatching(i) {
+  const screen = document.getElementById('cscreen-' + i);
+  if (screen) { screen.classList.remove('done'); screen.classList.add('watching'); }
+}
+
+function setCinemaVideoDone(i) {
+  const screen = document.getElementById('cscreen-' + i);
+  if (screen) { screen.classList.remove('watching'); screen.classList.add('done'); }
+}
+
+function stopCinema() {
+  clearInterval(cinemaTimerInterval);
+  clearInterval(cinemaBarInterval);
+  document.getElementById('cinema-overlay').classList.remove('active');
+}
+
 // ── ANALYZE CHANNEL ──
 async function analyzeChannel() {
   const name = document.getElementById('format-name-input').value.trim();
@@ -1242,73 +1571,74 @@ async function analyzeChannel() {
 
   if (!name) { showNotif('Digite o nome do formato/canal', true); return; }
 
-  // Validate upload tab
+  const filledSlots = isUploadTab ? videoSlots.filter(s => s.length > 0) : [];
+
   if (isUploadTab) {
-    const filledSlots = videoSlots.filter(s => s.length > 0);
-    if (filledSlots.length === 0) { showNotif('Adicione pelo menos 1 vídeo', true); return; }
+    if (filledSlots.length === 0) { showNotif('Adicione pelo menos 1 screenshot/frame do vídeo', true); return; }
   } else {
     if (urls.length === 0) { showNotif('Adicione pelo menos 1 URL', true); return; }
   }
 
-  const statusEl = document.getElementById('modal-status');
-  const statusText = document.getElementById('modal-status-text');
-  const analyzeBtn = document.getElementById('analyze-btn');
-
-  statusEl.classList.add('visible');
-  analyzeBtn.disabled = true;
-  analyzeBtn.textContent = '⏳ ANALISANDO...';
-
-  const filledSlots = isUploadTab ? videoSlots.filter(s => s.length > 0) : [];
   const totalVideos = isUploadTab ? filledSlots.length : urls.length;
+  const totalFrames = isUploadTab ? filledSlots.reduce((s, slot) => s + slot.length, 0) : 0;
 
-  const steps = [
-    `Carregando ${isUploadTab ? totalVideos + ' vídeo(s) de referência' : 'URLs'} para o Opus 4.6...`,
-    'Assistindo cada vídeo individualmente...',
-    'Comparando padrões entre os vídeos...',
-    'Mapeando paleta de cores e tipografia...',
-    'Estudando animações, personagens e ritmo...',
-    'Analisando estrutura narrativa completa...',
-    'Extraindo DNA unificado do canal...',
-    'Compilando guia de formato...',
-  ];
-  let step = 0;
-  const stepInterval = setInterval(() => {
-    if (step < steps.length) statusText.textContent = steps[step++];
-  }, 2500);
+  // close modal and start cinematic
+  closeModal();
+  await new Promise(r => setTimeout(r, 150));
+  startCinema(totalVideos, totalFrames, isUploadTab);
+  setCinemaStep('Preparando análise...', `Canal: ${name}`, 5, 'CARREGANDO');
 
   try {
     let messageContent = [];
 
     if (isUploadTab) {
-      statusText.textContent = 'Convertendo vídeos...';
-      // Add all files from all slots with clear separators
+      // Process each video slot with per-video progress
       for (let si = 0; si < filledSlots.length; si++) {
         const slot = filledSlots[si];
         const slotTitle = window['slotTitle_' + videoSlots.indexOf(slot)] || `Vídeo ${si+1}`;
-        // Add text separator before each video's parts
-        messageContent.push({ type: 'text', text: `\n--- INÍCIO DO VÍDEO ${si+1}: "${slotTitle}" ---\n` });
+        const pct = Math.round(5 + (si / filledSlots.length) * 40);
+
+        setCinemaStep(
+          `Carregando Vídeo ${si+1} de ${filledSlots.length}`,
+          `"${slotTitle}" — ${slot.length} frame${slot.length>1?'s':''}`,
+          pct,
+          'CARREGANDO'
+        );
+        setCinemaVideoWatching(si);
+
+        messageContent.push({ type: 'text', text: `\n--- VÍDEO ${si+1}: "${slotTitle}" ---\n` });
+
         for (const file of slot) {
+          // Only accept images — skip any non-image accidentally added
+          if (!file.type.startsWith('image/')) continue;
           const b64 = await fileToBase64(file);
-          messageContent.push({
-            type: 'document',
-            source: { type: 'base64', media_type: file.type, data: b64 }
-          });
+          let mediaType = file.type;
+          if (!['image/jpeg','image/png','image/gif','image/webp'].includes(mediaType)) mediaType = 'image/jpeg';
+          messageContent.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } });
         }
+
         messageContent.push({ type: 'text', text: `\n--- FIM DO VÍDEO ${si+1} ---\n` });
+
+        // Small delay for dramatic effect
+        await new Promise(r => setTimeout(r, 400));
+        setCinemaVideoDone(si);
       }
     }
 
-    // Build video description for prompt
+    // Build prompt
+    setCinemaStep('Enviando para Claude Opus...', 'Construindo prompt de análise profunda', 50, 'ENVIANDO');
+    await new Promise(r => setTimeout(r, 300));
+
     let videoDesc = '';
     if (isUploadTab) {
-      videoDesc = `Você recebeu ${filledSlots.length} VÍDEO(S) DE REFERÊNCIA do canal "${name}":
+      videoDesc = `Você recebeu ${filledSlots.length} VÍDEO(S) DE REFERÊNCIA do canal "${name}" na forma de screenshots/frames:
 ${filledSlots.map((slot, si) => {
   const slotTitle = window['slotTitle_' + videoSlots.indexOf(slot)] || `Vídeo ${si+1}`;
-  return `VÍDEO ${si+1}: "${slotTitle}" (${slot.length} parte${slot.length>1?'s':''}: ${slot.map(f=>f.name).join(', ')})`;
+  return `VÍDEO ${si+1}: "${slotTitle}" — ${slot.length} frame(s) enviados como imagens`;
 }).join('\n')}
 
-Analise CADA VÍDEO individualmente e depois COMPARE os padrões entre todos eles.
-O objetivo é extrair o DNA visual CONSISTENTE que aparece em múltiplos vídeos — esses são os padrões reais do canal.
+Analise CADA GRUPO DE FRAMES como se fosse um vídeo completo e depois COMPARE os padrões entre todos eles.
+Os frames representam cenas reais do vídeo — use-os para inferir o estilo visual, animação, cores, tipografia e identidade do canal.
 Priorize elementos que se REPETEM em 2+ vídeos como parte da identidade do canal.`;
     } else {
       videoDesc = `Analise os seguintes vídeos de referência do canal "${name}":\n${urls.map((u,i) => `${i+1}. ${u}`).join('\n')}`;
@@ -1318,7 +1648,7 @@ Priorize elementos que se REPETEM em 2+ vídeos como parte da identidade do cana
 
 ${videoDesc}
 
-Faça uma análise EXTREMAMENTE PROFUNDA de TODO o conteúdo. Observe CADA detalhe:
+Faça uma análise EXTREMAMENTE PROFUNDA de TODO o conteúdo visual. Observe CADA detalhe:
 - Como cada vídeo ABRE (primeiros segundos)
 - Como as cenas se DESENVOLVEM no meio
 - Como cada vídeo FECHA/encerra
@@ -1386,6 +1716,24 @@ Responda APENAS em JSON válido, sem markdown, sem texto extra:
 
     messageContent.push({ type: 'text', text: promptText });
 
+    setCinemaStep('Claude Opus está assistindo os frames...', 'Analisando estilo visual, cores e animações', 60, 'ASSISTINDO');
+
+    // Steps while waiting for API
+    const apiSteps = [
+      ['Comparando padrões entre os vídeos...', 'Identificando DNA visual do canal', 68],
+      ['Mapeando paleta de cores e tipografia...', 'Extraindo hex codes e fontes exatas', 75],
+      ['Estudando animações e personagens...', 'Timing, easing, proporções e movimento', 82],
+      ['Analisando estrutura narrativa...', 'Hook, desenvolvimento e fechamento', 88],
+      ['Extraindo DNA unificado do canal...', 'Compilando elementos assinatura', 93],
+    ];
+    let apiStepIdx = 0;
+    const apiStepInterval = setInterval(() => {
+      if (apiStepIdx < apiSteps.length) {
+        const [txt, sub, pct] = apiSteps[apiStepIdx++];
+        setCinemaStep(txt, sub, pct, 'ANALISANDO');
+      }
+    }, 4000);
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1397,35 +1745,41 @@ Responda APENAS em JSON válido, sem markdown, sem texto extra:
       })
     });
 
-    clearInterval(stepInterval);
-    const data = await response.json();
+    clearInterval(apiStepInterval);
+    setCinemaStep('Compilando guia de formato...', 'Finalizando análise', 97, 'FINALIZANDO');
 
+    const data = await response.json();
     if (data.error) throw new Error(data.error.message);
 
-    const textContent = data.content
-      .filter(b => b.type === 'text')
-      .map(b => b.text)
-      .join('');
-
+    const textContent = data.content.filter(b => b.type === 'text').map(b => b.text).join('');
     const clean = textContent.replace(/```json|```/g, '').trim();
     const jsonStart = clean.indexOf('{');
     const jsonEnd = clean.lastIndexOf('}') + 1;
     const analysis = JSON.parse(clean.slice(jsonStart, jsonEnd));
 
+    setCinemaStep('Análise concluída!', `DNA do canal "${name}" extraído com sucesso`, 100, 'CONCLUÍDO');
+    await new Promise(r => setTimeout(r, 1200));
+
+    stopCinema();
+
     analyzedFormatData = { name, ...analysis };
     renderAnalysisResult(analysis);
 
-    statusEl.classList.remove('visible');
+    // Re-open modal showing results
+    openNewFormat(true);
+    document.getElementById('modal-status').classList.remove('visible');
     document.getElementById('analyze-btn').style.display = 'none';
     document.getElementById('save-btn').style.display = '';
+    document.getElementById('analysis-result').classList.add('visible');
+    document.getElementById('format-name-input').value = name;
 
   } catch (err) {
-    clearInterval(stepInterval);
+    clearInterval(cinemaTimerInterval);
+    clearInterval(cinemaBarInterval);
+    stopCinema();
     console.error(err);
-    statusEl.classList.remove('visible');
-    analyzeBtn.disabled = false;
-    analyzeBtn.textContent = '◉ ANALISAR CANAL';
     showNotif('Erro: ' + (err.message || 'Verifique os arquivos e tente novamente.'), true);
+    openNewFormat();
   }
 }
 
