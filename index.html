@@ -1380,20 +1380,20 @@ function renderVideoSlots() {
             oninput="window['slotTitle_'+${si}]=this.value">
         </div>
         <div style="background:rgba(255,210,63,.05);border:1px solid rgba(255,210,63,.12);padding:8px 12px;font-size:8px;color:#aaa;line-height:1.8;margin-bottom:8px;">
-          📸 <span style="color:var(--y);font-weight:700;">SCREENSHOTS / FRAMES:</span> Tire prints de cenas do vídeo (PNG, JPG) e envie aqui.<br>
-          Quanto mais frames variados, <span style="color:var(--w)">melhor a análise do estilo visual</span>. Para vídeo completo, use a aba <span style="color:var(--r);font-weight:700">URL / YouTube</span>.
+          🎬 <span style="color:var(--y);font-weight:700;">VÍDEO OU SCREENSHOTS:</span> Arraste o vídeo (MP4, WebM, MOV) <span style="color:var(--w)">ou prints de cenas</span> (PNG, JPG) aqui.<br>
+          Para vídeo: frames serão extraídos automaticamente pelo browser. <span style="color:var(--g)">Sem upload externo.</span>
         </div>
         <div class="slot-drop-zone" id="dz-${si}"
           ondragover="event.preventDefault();this.classList.add('drag-over')"
           ondragleave="this.classList.remove('drag-over')"
           ondrop="handleSlotDrop(event,${si})"
           onclick="document.getElementById('slot-input-${si}').click()">
-          <input type="file" id="slot-input-${si}" accept="image/*" multiple style="display:none"
+          <input type="file" id="slot-input-${si}" accept="video/*,image/*" multiple style="display:none"
             onchange="handleSlotSelect(event,${si})">
           <div style="font-size:20px;opacity:.25;margin-bottom:6px;">▶</div>
           <div style="font-size:9px;color:var(--d2);line-height:1.8;">
             Arraste ou <span style="color:var(--r);font-weight:700;">clique para selecionar</span><br>
-            <span style="font-size:7px;color:var(--d)">PNG, JPG, WebP · screenshots/frames do vídeo</span>
+            <span style="font-size:7px;color:var(--d)">MP4, WebM, MOV · ou PNG, JPG, WebP</span>
           </div>
         </div>
         <div class="slot-file-list" id="slot-files-${si}">
@@ -1409,14 +1409,18 @@ function renderSlotFiles(si) {
   const files = videoSlots[si];
   if (!files.length) return '';
   files.sort((a, b) => a.name.localeCompare(b.name, undefined, {numeric: true}));
-  return files.map((f, i) => `
+  return files.map((f, i) => {
+    const isVideo = f.type.startsWith('video/');
+    const icon = isVideo ? '🎬' : '📸';
+    const typeLabel = isVideo ? '<span style="color:var(--y);font-size:7px;font-weight:700;margin-left:4px;">VÍDEO</span>' : '';
+    return `
     <div class="slot-file-item">
-      <span class="slot-file-order">P${String(i+1).padStart(2,'0')}</span>
-      <span class="slot-file-name">${f.name}</span>
+      <span class="slot-file-order">${icon}</span>
+      <span class="slot-file-name">${f.name}${typeLabel}</span>
       <span class="slot-file-size">${(f.size/1024/1024).toFixed(1)}MB</span>
       <button class="slot-file-del" onclick="removeSlotFile(${si},${i})">×</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function toggleSlot(si) {
@@ -1426,7 +1430,7 @@ function toggleSlot(si) {
 function handleSlotDrop(e, si) {
   e.preventDefault();
   document.getElementById('dz-'+si).classList.remove('drag-over');
-  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
   addSlotFiles(si, files);
 }
 
@@ -1454,7 +1458,15 @@ function refreshSlot(si) {
   const badge = document.getElementById('slot-badge-'+si);
   if (badge) {
     badge.className = hasFiles ? 'badge-ok' : 'badge-empty';
-    badge.textContent = hasFiles ? `✓ ${files.length} parte${files.length>1?'s':''}` : 'VAZIO';
+    const vidCount = files.filter(f=>f.type.startsWith('video/')).length;
+    const imgCount = files.filter(f=>f.type.startsWith('image/')).length;
+    if (hasFiles) {
+      let badgeTxt = '✓ ';
+      if (vidCount > 0) badgeTxt += vidCount + ' vídeo' + (vidCount>1?'s':'');
+      if (vidCount > 0 && imgCount > 0) badgeTxt += ' + ';
+      if (imgCount > 0) badgeTxt += imgCount + ' img' + (imgCount>1?'s':'');
+      badge.textContent = badgeTxt;
+    } else { badge.textContent = 'VAZIO'; }
   }
   // Update file list
   const listEl = document.getElementById('slot-files-'+si);
@@ -1472,6 +1484,70 @@ function refreshSlot(si) {
       totalEl.textContent = `${files.length} parte${files.length>1?'s':''} · ${totalMB.toFixed(1)} MB total`;
     } else if (totalEl) totalEl.remove();
   }
+}
+
+// ── VIDEO FRAME EXTRACTOR ──
+// Extracts N evenly-spaced frames from a video file as base64 JPEG images
+function extractVideoFrames(videoFile, numFrames = 12) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(videoFile);
+    const video = document.createElement('video');
+    video.src = url;
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'metadata';
+
+    video.addEventListener('error', () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Erro ao carregar vídeo: ' + videoFile.name));
+    });
+
+    video.addEventListener('loadedmetadata', async () => {
+      const duration = video.duration;
+      if (!duration || duration === Infinity) {
+        URL.revokeObjectURL(url);
+        reject(new Error('Duração inválida: ' + videoFile.name));
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const frames = [];
+
+      // Extract frames at evenly spaced intervals
+      // Skip first 2% and last 5% to avoid black frames
+      const start = duration * 0.02;
+      const end = duration * 0.95;
+      const step = (end - start) / (numFrames - 1);
+
+      for (let i = 0; i < numFrames; i++) {
+        const time = start + step * i;
+        await new Promise(res => {
+          video.currentTime = time;
+          const onSeeked = () => {
+            video.removeEventListener('seeked', onSeeked);
+            // Set canvas to video dimensions (max 854x480 for efficiency)
+            const maxW = 854, maxH = 480;
+            let w = video.videoWidth, h = video.videoHeight;
+            if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+            if (h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+            canvas.width = w;
+            canvas.height = h;
+            ctx.drawImage(video, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            frames.push(dataUrl.split(',')[1]); // base64 only
+            res();
+          };
+          video.addEventListener('seeked', onSeeked);
+        });
+      }
+
+      URL.revokeObjectURL(url);
+      resolve(frames);
+    });
+
+    video.load();
+  });
 }
 
 // file to base64
@@ -1598,29 +1674,54 @@ async function analyzeChannel() {
         const slotTitle = window['slotTitle_' + videoSlots.indexOf(slot)] || `Vídeo ${si+1}`;
         const pct = Math.round(5 + (si / filledSlots.length) * 40);
 
-        setCinemaStep(
-          `Carregando Vídeo ${si+1} de ${filledSlots.length}`,
-          `"${slotTitle}" — ${slot.length} frame${slot.length>1?'s':''}`,
-          pct,
-          'CARREGANDO'
-        );
         setCinemaVideoWatching(si);
-
         messageContent.push({ type: 'text', text: `\n--- VÍDEO ${si+1}: "${slotTitle}" ---\n` });
 
         for (const file of slot) {
-          // Only accept images — skip any non-image accidentally added
-          if (!file.type.startsWith('image/')) continue;
-          const b64 = await fileToBase64(file);
-          let mediaType = file.type;
-          if (!['image/jpeg','image/png','image/gif','image/webp'].includes(mediaType)) mediaType = 'image/jpeg';
-          messageContent.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } });
+          if (file.type.startsWith('video/')) {
+            // Extract frames from video file
+            setCinemaStep(
+              `Extraindo frames do Vídeo ${si+1}...`,
+              `"${file.name}" — processando com canvas`,
+              pct,
+              'EXTRAINDO'
+            );
+            try {
+              const frames = await extractVideoFrames(file, 14);
+              setCinemaStep(
+                `${frames.length} frames extraídos do Vídeo ${si+1}`,
+                `"${file.name}" — enviando para Opus`,
+                pct + 5,
+                'CARREGANDO'
+              );
+              // Update cinema frame counter
+              const curFrames = document.getElementById('cinema-frames');
+              const cur = parseInt(curFrames.textContent) || 0;
+              curFrames.textContent = (cur + frames.length) + ' frames';
+              for (const b64 of frames) {
+                messageContent.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } });
+              }
+            } catch(videoErr) {
+              console.warn('Frame extraction failed:', videoErr);
+              messageContent.push({ type: 'text', text: `[Vídeo: ${file.name} — não foi possível extrair frames, analise pelo nome]` });
+            }
+          } else if (file.type.startsWith('image/')) {
+            // Regular image/screenshot
+            setCinemaStep(
+              `Carregando Vídeo ${si+1} de ${filledSlots.length}`,
+              `"${slotTitle}" — ${slot.length} screenshot${slot.length>1?'s':''}`,
+              pct,
+              'CARREGANDO'
+            );
+            const b64 = await fileToBase64(file);
+            let mediaType = file.type;
+            if (!['image/jpeg','image/png','image/gif','image/webp'].includes(mediaType)) mediaType = 'image/jpeg';
+            messageContent.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } });
+          }
         }
 
         messageContent.push({ type: 'text', text: `\n--- FIM DO VÍDEO ${si+1} ---\n` });
-
-        // Small delay for dramatic effect
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => setTimeout(r, 300));
         setCinemaVideoDone(si);
       }
     }
@@ -1631,10 +1732,11 @@ async function analyzeChannel() {
 
     let videoDesc = '';
     if (isUploadTab) {
-      videoDesc = `Você recebeu ${filledSlots.length} VÍDEO(S) DE REFERÊNCIA do canal "${name}" na forma de screenshots/frames:
+      videoDesc = `Você recebeu ${filledSlots.length} VÍDEO(S) DE REFERÊNCIA do canal "${name}". Para cada vídeo foram extraídos frames automáticos ou enviados screenshots:
 ${filledSlots.map((slot, si) => {
   const slotTitle = window['slotTitle_' + videoSlots.indexOf(slot)] || `Vídeo ${si+1}`;
-  return `VÍDEO ${si+1}: "${slotTitle}" — ${slot.length} frame(s) enviados como imagens`;
+  const hasVid = slot.some(f=>f.type.startsWith('video/'));
+  return `VÍDEO ${si+1}: "${slotTitle}" — ${hasVid ? 'frames extraídos automaticamente do arquivo de vídeo' : slot.length + ' screenshot(s) enviados'}`;
 }).join('\n')}
 
 Analise CADA GRUPO DE FRAMES como se fosse um vídeo completo e depois COMPARE os padrões entre todos eles.
